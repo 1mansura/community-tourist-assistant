@@ -1,0 +1,79 @@
+[
+  {
+    "model": "assets.category",
+    "pk": 1,
+    "fields": {
+      "name": "Heritage Sites",
+      "slug": "heritage-sites",
+      "description": "Historic buildings, castles, and National Trust properties",
+      "icon": "landmark",
+      "display_order": 1
+    }
+  },
+  {
+    "model": "assets.category",
+    "pk": 2,
+    "fields": {
+      "name": "Beaches",
+      "slug": "beaches",
+      "description": "Coastal beaches and coves",
+      "icon": "umbrella-beach",
+      "display_order": 2
+    }
+  },
+  {
+    "model": "assets.category",
+    "pk": 3,
+    "fields": {
+      "name": "Parks & Gardens",
+      "slug": "parks-gardens",
+      "description": "Public parks, gardens, and green spaces",
+      "icon": "tree",
+      "display_order": 3
+    }
+  },
+  {
+    "model": "assets.category",
+    "pk": 4,
+    "fields": {
+      "name": "Beauty Spots",
+      "slug": "beauty-spots",
+      "description": "Scenic viewpoints and natural wonders",
+      "icon": "mountain",
+      "display_order": 4
+    }
+  },
+  {
+    "model": "assets.category",
+    "pk": 5,
+    "fields": {
+      "name": "Dining",
+      "slug": "dining",
+      "description": "Restaurants, cafes, and local eateries",
+      "icon": "utensils",
+      "display_order": 5
+    }
+  },
+  {
+    "model": "assets.category",
+    "pk": 6,
+    "fields": {
+      "name": "Pubs & Nightlife",
+      "slug": "pubs-nightlife",
+      "description": "Pubs, bars, and entertainment venues",
+      "icon": "glass-cheers",
+      "display_order": 6
+    }
+  },
+  {
+    "model": "assets.category",
+    "pk": 7,
+    "fields": {
+      "name": "Activities",
+      "slug": "activities",
+      "description": "Tours, sports, and outdoor activities",
+      "icon": "hiking",
+      "display_order": 7
+    }
+  }
+]
