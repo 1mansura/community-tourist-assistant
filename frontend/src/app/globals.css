@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 13 148 136;
+    --color-accent: 245 158 11;
+    --radius: 0.75rem;
+    --radius-lg: 1rem;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(13, 148, 136, 0.08), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, rgba(245, 158, 11, 0.06), transparent);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 bg-primary-600 text-white rounded-xl font-medium
+           shadow-sm hover:bg-primary-700 hover:shadow-glow
+           focus:outline-none focus:ring-2 focus:ring-primary-500
+           focus:ring-offset-2 transition-all duration-200;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-white text-slate-700 border border-slate-200
+           rounded-xl font-medium hover:bg-slate-50 hover:border-primary-200
+           focus:outline-none focus:ring-2 focus:ring-primary-500
+           focus:ring-offset-2 transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-card border border-slate-100
+           overflow-hidden transition-shadow duration-300;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card-hover hover:border-primary-100;
+  }
+
+  .input {
+    @apply w-full px-4 py-2.5 border border-slate-300 rounded-xl
+           focus:outline-none focus:ring-2 focus:ring-primary-500
+           focus:border-transparent transition-all duration-200;
+  }
+
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+}
