@@ -1,0 +1,112 @@
+@startuml "Backend Component Architecture"
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam padding 10
+skinparam nodesep 50
+skinparam ranksep 50
+
+title Backend Component Architecture - Community Tourist Assistant (Section 1.5.3)
+
+actor "Client / Browser" as client
+
+package "Request Pipeline" as pipeline {
+  [Django Middleware\n(CORS, Security, CSRF, Clickjacking)] as middleware
+  [JWT Authentication (SimpleJWT)] as jwt
+  [Permission Classes\n(IsAuthenticatedOrReadOnly,\nIsOwnerOrReadOnly,\nIsModeratorOrAdmin, IsAdmin)] as perms
+  note right of jwt
+    Access token: 30 min
+    Refresh token: 7 days
+    Token blacklist on rotation
+  end note
+}
+
+package "Public API (DRF)" as public_api {
+  [AssetViewSet / CategoryViewSet] as asset_views
+  [ReviewViewSet] as review_views
+  [RegisterView / ProfileView / LeaderboardView] as user_views
+  [AssetImageViewSet] as image_views
+  [DRF Serialisers (validation + mapping)] as serialisers
+  note right of serialisers
+    Serialisers sit with the views —
+    they validate data entering and
+    leaving the model layer.
+  end note
+}
+
+package "Admin API (DRF)" as admin_api {
+  [ModerationQueueView / HistoryView / DecisionView] as mod_views
+  [ModerationUsersView / UserStatusView] as mod_user_views
+  [ReportViewSet / AuditLogView] as report_views
+  [PlatformStatsView / AdminAnalyticsView] as analytics_views
+}
+
+package "Business Logic" as logic {
+  [Points and Badges (users/badges.py)] as badges
+  [Filters (django-filter, Search, Ordering)] as filters
+}
+
+package "Domain Models" as models {
+  [User / UserBadge] as user_model
+  [Asset / Category / AssetImage] as asset_model
+  [Review / ReviewHelpful] as review_model
+  [ModerationAction / Report / AuditLog] as mod_model
+  note bottom of mod_model
+    AuditLog is written via business logic,
+    not directly from views.
+  end note
+  [DailyStats / CategoryStats] as stats_model
+  note right of stats_model
+    Defined in schema; admin dashboard
+    does not read these today.
+    AdminAnalyticsView aggregates live
+    via ORM on Asset, User, Category,
+    ModerationAction, Review.
+  end note
+}
+
+package "Persistence" as persistence {
+  [Django ORM] as orm
+  [Migrations] as migrations
+}
+
+database "PostgreSQL 15" as postgres
+database "MinIO (S3)" as minio
+
+rectangle "Cache Layer\n(no dedicated Redis in MVP;\nDB + HTTP/browser cache only)" as cache #White
+
+' ── Request entry ──────────────────────────────────────────
+client -[#blue]down-> pipeline : enters
+
+' ── Pipeline to APIs ───────────────────────────────────────
+pipeline -[#blue]-> public_api : routes to
+pipeline -[#blue]-> admin_api : routes to
+
+' ── APIs to business logic ─────────────────────────────────
+public_api -[#purple]-> logic : applies
+admin_api -[#purple]-> logic : applies
+
+' ── Pipeline and logic to models ───────────────────────────
+public_api -[#blue]-> models : validates via serialisers
+logic -[#purple]-> models : operates on
+
+' ── Models to persistence ──────────────────────────────────
+models -[#green]-> persistence : persisted by
+
+' ── Persistence to database ────────────────────────────────
+persistence -[#green]-> postgres : SQL
+
+analytics_views -[#green]-> orm : live aggregates\n(no snapshot tables)
+
+' ── Storage ────────────────────────────────────────────────
+image_views -[#red]-> minio : uploads/retrieves
+
+legend right
+  |= Colour |= Flow             |
+  | <#blue>   | Request lifecycle |
+  | <#green>  | Data flow         |
+  | <#purple> | Business logic    |
+  | <#red>    | Media storage     |
+endlegend
+
+@enduml

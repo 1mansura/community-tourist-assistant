@@ -1,0 +1,42 @@
+@startuml "C4 Container Diagram"
+!theme plain
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam padding 10
+skinparam nodesep 80
+skinparam ranksep 60
+
+title C4 Container Diagram for Community Tourist Assistant
+
+rectangle "**User**\n[Person]\n\nA tourist, contributor, or\nadministrator who uses\nthe platform" as user #LightSteelBlue
+
+rectangle "Community Tourist Assistant\n[Software System]" as system #E8E8E8 {
+
+  rectangle "**Next.js Application**\n[Container: Web Application]\n[Technology: Next.js 15, React 18,\nTypeScript, Tailwind CSS, Leaflet]\n\nServes the web UI, handles routing,\nrenders pages and interactive map" as nextjs #LightBlue
+
+  rectangle "**Django REST API**\n[Container: API Application]\n[Technology: Python 3.12, Django 4.2,\nDRF, SimpleJWT, django-storages]\n\nExposes REST endpoints, enforces\nbusiness rules and JWT authentication" as django #LightGreen
+
+  rectangle "**PostgreSQL 15**\n[Container: Database]\n[Technology: Relational database]\n\nStores users, assets, ratings,\nsubmissions, reports, and audit logs" as postgres #LightYellow
+
+  rectangle "**MinIO**\n[Container: Object Storage]\n[Technology: S3-compatible storage]\n\nStores uploaded images\nand media files" as minio #LightYellow
+}
+
+rectangle "**OpenStreetMap**\n[External System]\n\nProvides map tile images\nfor the interactive map" as osm #White
+
+user -down-> nextjs : "Uses web UI\n(HTTPS)"
+nextjs -right-> django : "REST API (HTTPS)"
+nextjs -down-> osm : "Fetch map tiles\n(HTTPS)"
+django -down-> postgres : "SQL"
+django -down-> minio : "S3 API (HTTPS)"
+
+legend right
+  |= Colour |= Type |
+  | <#LightSteelBlue> | Person |
+  | <#LightBlue> | Web Application |
+  | <#LightGreen> | API Application |
+  | <#LightYellow> | Data Store |
+  | <#White> | External System |
+endlegend
+
+@enduml

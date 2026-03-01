@@ -1,0 +1,62 @@
+@startuml "Architecture Layers Overview"
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam padding 10
+
+title "Frontend Architecture — Layer Overview (Section 1.5.4)"
+
+package "Presentation Layer (Next.js App Router)" as presentation {
+  [Pages (src/app)\n15 routes — public, admin, auth, utility] as pages
+  [Feature components (src/components)\nHeader, AssetCard, MapContainer, ReviewForm,\nLocationPickerMap, ReportButton, HomeContent] as components
+}
+
+package "Application Layer" as application {
+  [AuthProvider / useAuth] as auth_ctx
+  [NotificationProvider / useNotification] as notif_ctx
+  [Role-aware route behavior\n(staff vs contributor vs user)] as role_logic
+}
+
+package "Data + Integration Layer" as data {
+  package "Service modules (src/services)" as services {
+    [assets.ts] as s_assets
+    [reviews.ts] as s_reviews
+    [auth.ts] as s_auth
+    [moderation.ts\n(queue, users, reports, analytics)] as s_mod
+  }
+  [Axios API client\nlib/api.ts] as api_client
+  [API URL resolver\nlib/apiUrl.ts] as api_url
+  [Media URL normalizer\nlib/mediaUrl.ts] as media_url
+}
+
+cloud "External services" as ext {
+  [Django REST API] as ext_api
+  [OpenStreetMap tiles] as ext_osm
+  [Nominatim geocoder] as ext_geo
+}
+
+presentation -[#blue]-> application : uses providers + role state
+application -[#green]-> data : calls services
+data -[#black]-> ext_api : HTTPS JSON
+
+s_assets -[#black]-> api_client
+s_reviews -[#black]-> api_client
+s_auth -[#black]-> api_client
+s_mod -[#black]-> api_client
+api_url -[#black]-> s_assets : server fetch base URL
+media_url -[#black]-> components : normalize image paths
+
+components -[#purple]-> ext_osm : map tiles
+components -[#purple]-> ext_geo : place lookup
+
+legend right
+  |= Colour |= Meaning |
+  | <#blue> | UI to app state |
+  | <#green> | App state to data services |
+  | <#black> | API/data plumbing |
+  | <#purple> | External map/geocode integration |
+endlegend
+
+@enduml

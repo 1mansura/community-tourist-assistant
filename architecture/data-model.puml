@@ -1,0 +1,180 @@
+@startuml "Data Model"
+!theme plain
+
+title "Data Model - Community Tourist Assistant (Section 1.5.5)\n(aligned with Django models in backend/apps/)"
+
+entity "User" as user {
+  * id : BIGINT <<PK>>
+  --
+  * email : VARCHAR <<UK>> <<USERNAME_FIELD>>
+  * password : VARCHAR <<hashed>>
+  * username : VARCHAR <<UK>>
+  * role : VARCHAR (user | contributor | moderator | admin)
+  bio : TEXT
+  avatar : FILE (optional)
+  location : VARCHAR
+  * points : INTEGER
+  * contribution_count : INTEGER
+  email_verified : BOOLEAN
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  .. Django AbstractUser ..
+  first_name, last_name, is_staff, ...
+}
+
+entity "Category" as category {
+  * id : BIGINT <<PK>>
+  --
+  * name : VARCHAR <<UK>>
+  * slug : VARCHAR <<UK>>
+  description : TEXT
+  * icon : VARCHAR
+  * display_order : INTEGER
+}
+
+entity "Asset" as asset {
+  * id : BIGINT <<PK>>
+  --
+  * title : VARCHAR
+  * slug : VARCHAR <<UK>>
+  * description : TEXT
+  * category_id : BIGINT <<FK>>
+  * latitude : DECIMAL
+  * longitude : DECIMAL
+  address : VARCHAR
+  postcode : VARCHAR
+  website : URL
+  phone : VARCHAR
+  * opening_hours : JSON
+  * status : VARCHAR (pending | approved | rejected)
+  * submitted_by_id : BIGINT <<FK>>
+  * average_rating : DECIMAL
+  * review_count : INTEGER
+  * view_count : INTEGER
+  * featured : BOOLEAN
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+}
+
+entity "AssetImage" as asset_image {
+  * id : BIGINT <<PK>>
+  --
+  * asset_id : BIGINT <<FK>>
+  * image : FILE (stored in MinIO or MEDIA_ROOT)
+  caption : VARCHAR
+  * is_primary : BOOLEAN
+  uploaded_by_id : BIGINT <<FK>>
+  * uploaded_at : TIMESTAMP
+}
+
+entity "Review" as review {
+  * id : BIGINT <<PK>>
+  --
+  * asset_id : BIGINT <<FK>>
+  * user_id : BIGINT <<FK>>
+  * rating : SMALLINT (1-5)
+  * title : VARCHAR
+  * content : TEXT
+  visit_date : DATE
+  * helpful_count : INTEGER
+  * created_at : TIMESTAMP
+  * updated_at : TIMESTAMP
+  .. unique (asset, user) ..
+}
+
+entity "ReviewHelpful" as review_helpful {
+  * id : BIGINT <<PK>>
+  --
+  * review_id : BIGINT <<FK>>
+  * user_id : BIGINT <<FK>>
+  * created_at : TIMESTAMP
+  .. unique (review, user) ..
+}
+
+entity "Report" as report {
+  * id : BIGINT <<PK>>
+  --
+  * asset_id : BIGINT <<FK>>
+  reporter_id : BIGINT <<FK>>
+  * report_type : VARCHAR (inaccurate | inappropriate | spam | closed | other)
+  * description : TEXT
+  * status : VARCHAR (pending | resolved | dismissed)
+  resolved_by_id : BIGINT <<FK>>
+  resolution_notes : TEXT
+  * created_at : TIMESTAMP
+  resolved_at : TIMESTAMP
+}
+
+entity "ModerationAction" as moderation_action {
+  * id : BIGINT <<PK>>
+  --
+  * asset_id : BIGINT <<FK>>
+  moderator_id : BIGINT <<FK>>
+  * action : VARCHAR (approve | reject | request_changes)
+  reason : TEXT
+  * created_at : TIMESTAMP
+}
+
+entity "UserBadge" as user_badge {
+  * id : BIGINT <<PK>>
+  --
+  * user_id : BIGINT <<FK>>
+  * badge_key : VARCHAR
+  * earned_at : TIMESTAMP
+  .. unique (user, badge_key) ..
+}
+
+entity "AuditLog" as audit_log {
+  * id : BIGINT <<PK>>
+  --
+  user_id : BIGINT <<FK>>
+  * action : VARCHAR
+  * target_type : VARCHAR
+  * target_id : INTEGER
+  * details : JSON
+  ip_address : VARCHAR
+  * created_at : TIMESTAMP
+}
+
+entity "DailyStats" as daily_stats {
+  * id : BIGINT <<PK>>
+  --
+  * date : DATE <<UK>>
+  totals / new counts for assets, users, reviews, views
+  * created_at : TIMESTAMP
+}
+
+entity "CategoryStats" as category_stats {
+  * id : BIGINT <<PK>>
+  --
+  * category_id : BIGINT <<FK>>
+  * date : DATE
+  asset_count, view_count, review_count, average_rating
+  .. unique (category, date) ..
+}
+
+note right of daily_stats
+  Present in schema.
+  Current AdminAnalyticsView uses
+  live ORM aggregates instead.
+end note
+
+user ||--o{ asset : "submits (nullable FK)"
+user ||--o{ review : "writes"
+user ||--o{ asset_image : "uploads"
+user ||--o{ report : "creates"
+user ||--o{ report : "resolves"
+user ||--o{ user_badge : "earns"
+user ||--o{ moderation_action : "moderates"
+user ||--o{ audit_log : "acts in"
+
+asset ||--o{ review : "has"
+asset ||--o{ asset_image : "images"
+asset ||--o{ report : "receives"
+asset ||--o{ moderation_action : "has actions"
+asset }o--|| category : "belongs to"
+review ||--o{ review_helpful : "votes"
+review_helpful }o--|| user : "voted by"
+category ||--o{ category_stats : "stats"
+
+@enduml

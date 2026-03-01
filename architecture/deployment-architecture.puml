@@ -1,0 +1,37 @@
+@startuml "Deployment Architecture"
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Deployment.puml
+
+title "Deployment Architecture - Community Tourist Assistant (Section 1.5.6)\n(Docker Compose project `ecm3432demo`)"
+
+Deployment_Node(client, "Client Device", "Computer, Tablet, or Smartphone") {
+  Container(browser, "Web Browser", "HTML, CSS, JavaScript", "User interface")
+}
+
+Deployment_Node(internet, "Internet / localhost") {
+  Deployment_Node(cloud, "Docker Compose stack", "docker-compose.yml") {
+    Deployment_Node(webTier, "Frontend container") {
+      Container(nextjs, "Next.js Application", "Node.js 20, Next 15", "Dev server · :3000\nINTERNAL_API_URL → backend:8000")
+    }
+
+    Deployment_Node(apiTier, "Backend container") {
+      Container(django, "Django REST API", "Python 3.12, runserver", "API · :8000\nDJANGO_SETTINGS_MODULE=config.settings.dev")
+    }
+
+    Deployment_Node(dataTier, "Data services") {
+      ContainerDb(postgres, "PostgreSQL", "15.17-alpine3.23", "Named volume db_data · :5432")
+      Container(minio, "MinIO", "S3-compatible", "API :9000, console :9001\nVolume minio_data")
+    }
+  }
+}
+
+Deployment_Node(ci, "CI (GitHub Actions)") {
+  Container(gha, "GitHub Actions", "ubuntu-latest", "pytest + ruff; tsc + ESLint + Jest + build")
+}
+
+Rel(browser, nextjs, "HTTP localhost:3000")
+Rel(nextjs, django, "HTTP · REST JSON\n(backend:8000 from SSR, localhost:8000 from browser)")
+Rel(django, postgres, "TCP · SQL")
+Rel(django, minio, "HTTP · S3 API\n(MINIO_ENDPOINT on Docker network)")
+Rel(gha, django, "CI on push/PR:\npytest, ruff, Jest, build\n(runner, not this stack)")
+
+@enduml

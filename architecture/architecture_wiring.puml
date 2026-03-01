@@ -1,0 +1,81 @@
+@startuml "Page-to-Component Wiring"
+!theme plain
+skinparam componentStyle rectangle
+skinparam linetype ortho
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam padding 8
+
+title "Frontend Architecture — Page-to-Component Wiring (Section 1.5.4)"
+
+package "Pages (src/app)" as pages {
+  [Home /] as p_home
+  [Assets /assets] as p_assets
+  [Asset detail /assets/{slug}] as p_asset_detail
+  [Submit /assets/submit] as p_submit
+  [Edit /assets/{slug}/edit] as p_edit
+  [Map /map] as p_map
+  [Auth /login + /register] as p_auth
+  [Profile /profile] as p_profile
+  [Leaderboard /leaderboard] as p_leaderboard
+  [Status /status] as p_status
+  [Admin moderation /admin/moderation] as p_admin_mod
+  [Admin reports /admin/reports] as p_admin_reports
+  [Admin analytics /admin/analytics] as p_admin_analytics
+  [About /about] as p_about
+}
+
+package "Feature components (src/components)" as components {
+  [Header + layout shell] as c_layout
+  [HomeContent] as c_home
+  [AssetCard + AssetFilters] as c_assets
+  [ReviewForm + ReviewList] as c_reviews
+  [ReportButton + SuggestUpdateButton] as c_reporting
+  [MapContainer + DynamicMap] as c_map
+  [LocationPickerMap + DynamicLocationPickerMap] as c_pick_map
+}
+
+' Home
+p_home -[#red]-> c_home
+
+' Assets listing
+p_assets -[#red]-> c_assets
+
+' Asset detail — renders asset, reviews, and reporting actions
+p_asset_detail -[#red]-> c_assets
+p_asset_detail -[#red]-> c_reviews
+p_asset_detail -[#red]-> c_reporting
+
+' Submit — needs location picker
+p_submit -[#red]-> c_pick_map
+
+' Edit — needs location picker + asset form
+p_edit -[#red]-> c_pick_map
+p_edit -[#red]-> c_assets
+
+' Map
+p_map -[#red]-> c_map
+
+' Auth — wrapped in layout shell
+p_auth -[#red]-> c_layout
+
+' Profile — layout + user's submitted assets
+p_profile -[#red]-> c_layout
+p_profile -[#red]-> c_assets
+
+' Leaderboard, Status, About — layout only
+p_leaderboard -[#red]-> c_layout
+p_status -[#red]-> c_layout
+p_about -[#red]-> c_layout
+
+' Admin pages — layout shell for all three
+p_admin_mod -[#red]-> c_layout
+p_admin_reports -[#red]-> c_layout
+p_admin_analytics -[#red]-> c_layout
+
+legend right
+  |= Colour |= Meaning |
+  | <#red> | Page-to-component composition |
+endlegend
+
+@enduml

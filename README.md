@@ -2,6 +2,8 @@
 
 A crowd-sourced tourism platform for Devon: discover attractions, heritage sites, beaches, and dining. Submit places, write reviews, upload photos, and explore on an interactive map, with moderation and gamification (points, badges, leaderboard).
 
+[![CI Status](https://github.com/1mansura/community-tourist-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/1mansura/community-tourist-assistant/actions/workflows/ci.yml)
+
 ## System overview
 
 Two parts run on your machine:
@@ -22,7 +24,7 @@ The **Community Tourist Assistant (CTA)** is a web application that lets people 
 
 ## Key features
 
-- **Interactive map** — Places on a map with sidebar search; click for details, "View full page", or "Write a review".
+- **Interactive map** — Places on a map with sidebar search; click for details, “View full page”, or “Write a review”.
 - **Browse & discover** — List of places with filters (category, search, sort by rating or date).
 - **Submit places** — Add new places with location, description, and images (pending moderation).
 - **Reviews & ratings** — Rate places, write reviews, mark reviews as helpful.
@@ -30,6 +32,20 @@ The **Community Tourist Assistant (CTA)** is a web application that lets people 
 - **Gamification** — Points and badges for contributions; leaderboard.
 - **Moderation** — Queue for staff to approve/reject submissions; user reports and audit log.
 - **Responsive UI** — Works on mobile; animations and clear navigation.
+
+## Latest implementation status
+
+The repository includes the latest coursework MVP updates, including:
+
+- Admin analytics dashboard (`/admin/analytics`) with KPI cards, SVG donut/column/bar charts (30-day submission trend, asset status, moderation decisions, category breakdown, top contributors).
+- Moderation queue with submitted image review — moderators can inspect uploaded photos inline.
+- Role-aware navigation: admin/moderator users see a focused menu (Home, Profile, Dashboard, Moderation) without contributor links.
+- Role-aware profile page: admin users see moderation overview stats; contributors see submission progress.
+- User moderation controls (suspend, ban, reactivate) in admin moderation.
+- Submit flow location UX upgrades (address search + map click + confirm pin).
+- Asset detail location map panel with quick external map links.
+- Internal service health page at `/status` (hidden from nav, direct link only).
+- Deterministic demo reset scripts and seeded moderation queue/history data (including rejected assets and spread submission dates for realistic trend charts).
 
 ## Backend API
 
@@ -300,6 +316,112 @@ MinIO login (default local demo): `minioadmin` / `minioadmin`.
 Useful commands: `docker compose logs -f` (logs), `docker compose down` (stop), `docker compose down -v` (wipe volumes).
 
 A separate `docker-compose.prod.yml` is provided for production-like deployments.
+
+## Using the application
+
+**As a visitor or logged-in user:** browse the home page, map, and list; view place details and reviews; register and log in; submit places (they go to the moderation queue); write reviews; view leaderboard and your profile (points, badges).
+
+**As a moderator or admin:** everything above, plus the moderation queue (approve/reject submissions), user reports, and audit log.
+
+## API endpoints
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/users/register/` | Register a new user |
+| POST | `/api/users/login/` | Login and receive JWT access/refresh tokens |
+| POST | `/api/users/token/refresh/` | Refresh access token |
+| GET  | `/api/users/profile/` | Get current user profile (authenticated) |
+| GET  | `/api/users/leaderboard/` | Public leaderboard (top contributors) |
+
+### Places (assets)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET  | `/api/assets/` | List approved places (paginated; filter by category, search, ordering) |
+| GET  | `/api/assets/featured/` | Featured places for homepage |
+| GET  | `/api/assets/nearby/?lat=...&lng=...` | Places near a location |
+| GET  | `/api/assets/{slug}/` | Place details |
+| POST | `/api/assets/` | Submit a new place (authenticated) |
+| GET  | `/api/assets/categories/` | List categories |
+
+### Reviews
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET  | `/api/reviews/?asset={slug}` | List reviews for a place |
+| POST | `/api/reviews/` | Create a review (authenticated) |
+| POST | `/api/reviews/{id}/helpful/` | Mark review as helpful (authenticated) |
+
+### Moderation (moderator/admin)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET  | `/api/moderation/queue/` | Pending submissions |
+| POST | `/api/moderation/assets/{id}/decide/` | Approve / reject / request changes |
+| GET  | `/api/moderation/users/` | List users for suspend/ban controls |
+| POST | `/api/moderation/users/{id}/status/` | Suspend / ban / reactivate user |
+| GET  | `/api/moderation/audit/` | Audit log |
+| POST | `/api/moderation/reports/` | Submit a report (authenticated) |
+
+### Analytics
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET  | `/api/analytics/stats/` | Platform statistics (asset totals, user count, review averages, category count) |
+| GET  | `/api/analytics/admin/` | Admin analytics (daily submissions, pending count, status breakdown, moderation decisions, top contributors, category summary) |
+
+When the backend is running, full interactive docs: **http://localhost:8000/api/docs/** (Swagger).
+
+## Development
+
+### Tests
+
+**Backend (pytest):**
+```bash
+# From repo root (creates/uses backend/.venv; defaults to test settings):
+./scripts/run-backend-tests.sh
+
+# Or from backend with venv active:
+cd backend && source .venv/bin/activate && DJANGO_SETTINGS_MODULE=config.settings.test pytest
+# With coverage:
+pytest --cov=apps --cov-report=html
+```
+
+**Frontend (lint and build):**
+```bash
+cd frontend
+npm run lint
+npm run build
+npm test   # Jest
+```
+
+### Production build
+
+**Backend:**
+```bash
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py collectstatic   # if using static files
+# Run with gunicorn: gunicorn config.wsgi:application --bind 0.0.0.0:8000
+```
+
+**Frontend:**
+```bash
+cd frontend
+npm run build
+npm start   # or serve via Node/PM2
+```
+
+Set `NEXT_PUBLIC_API_URL` to your production API URL.
+
+## Documentation
+
+Architecture diagrams (PlantUML sources and rendered PNGs) are in `architecture/` — see [architecture/README.md](architecture/README.md).
+
+Interactive API documentation is served at `/api/docs/` when the backend is running.
 
 ## Privacy and data protection
 

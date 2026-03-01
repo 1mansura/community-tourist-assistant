@@ -1,0 +1,109 @@
+@startuml "Asset Submission and Moderation Sequence"
+!theme plain
+
+participant "User" as user
+participant "Moderator/Admin" as moderator
+box "Frontend" #LightBlue
+  participant "Submit Page (/assets/submit)" as submitPage
+  participant "Admin Moderation Page (/admin/moderation)" as modPage
+end box
+box "Backend" #LightGreen
+  participant "Django API" as api
+  participant "DRF Auth + Permissions" as authz
+  participant "Serializers" as serializers
+  participant "Gamification\n(points + badges)" as rewards
+  participant "Audit logger" as audit
+  participant "Models" as models
+  database "PostgreSQL" as db
+end box
+box "Storage" #LightYellow
+  participant "MinIO" as minio
+end box
+
+title "Sequence Diagram - Asset Submission and Admin Moderation (Section 1.5.7)"
+
+== Asset Submission ==
+
+group User submits an asset
+  user -> submitPage : Fill submission form + choose location
+  user -> submitPage : Optional image upload
+
+  alt Not authenticated
+    submitPage --> user : Redirect to /login
+  else Authenticated
+    submitPage -> api : POST /api/assets/
+    activate api
+    api -> authz : Validate JWT + IsAuthenticated
+    authz --> api : OK
+    api -> serializers : Validate payload
+    serializers --> api : Valid data
+    api -> models : Create Asset (status=pending)
+    models -> db : INSERT Asset
+    db --> api : Asset ID + slug
+
+    opt Optional image upload
+      submitPage -> api : POST /api/assets/{slug}/images/ (multipart/form-data)
+      api -> authz : Validate owner/moderator permission
+      authz --> api : OK
+      api -> serializers : Validate image + caption
+      serializers --> api : Valid file
+      api -> minio : Put object (S3) when USE_S3_MEDIA
+      minio --> api : OK / object key
+      api -> db : INSERT AssetImage row
+      api -> rewards : add_points(5, "Image uploaded")
+      rewards -> db : UPDATE users_user.points
+    end
+
+    api --> submitPage : 201 Created
+    deactivate api
+    submitPage --> user : Submission confirmed (pending moderation)
+  end
+end
+
+== Admin Moderation ==
+
+group Moderator reviews and decides
+  moderator -> modPage : Open moderation queue
+  modPage -> api : GET /api/moderation/queue/
+  activate api
+  api -> authz : Validate JWT + IsModeratorOrAdmin
+  authz --> api : OK
+  api -> db : SELECT pending assets + images
+  db --> api : Pending list
+  api --> modPage : 200 OK (assets)
+  deactivate api
+
+  moderator -> modPage : Approve / reject / request changes
+  modPage -> api : POST /api/moderation/assets/{id}/decide/
+  activate api
+  api -> authz : Validate JWT + IsModeratorOrAdmin
+  authz --> api : OK
+  api -> serializers : Validate action + reason
+  serializers --> api : Validated
+
+  alt action == approve
+    api -> db : UPDATE Asset.status = approved
+    api -> rewards : add_points(50, "Asset approved")
+    rewards -> db : UPDATE users_user.points
+    api -> db : Recalculate contribution_count
+    api -> rewards : check_and_award_badges(submitter)
+    rewards -> db : INSERT UserBadge (if newly earned)
+  else action == reject
+    api -> db : UPDATE Asset.status = rejected
+  else action == request_changes
+    api -> db : Keep/Set Asset.status = pending
+  end
+
+  api -> db : INSERT ModerationAction
+  api -> audit : log_audit(moderation action)
+  audit -> db : INSERT AuditLog
+  db --> api : Success
+  api --> modPage : 200 OK (new_status)
+  deactivate api
+
+  modPage -> api : GET /api/moderation/history/ (refresh)
+  api --> modPage : 200 OK
+  modPage --> moderator : Queue + history updated
+end
+
+@enduml

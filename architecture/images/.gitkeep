@@ -1,0 +1,3 @@
+# Generated PNG/SVG outputs go here (or in docs/diagrams/ for the report).
+# From repo root, generate with:
+# docker run --rm -v "$(pwd)/architecture:/data" plantuml/plantuml -tpng -o images /data/\*.puml

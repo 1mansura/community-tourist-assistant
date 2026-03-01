@@ -1,0 +1,76 @@
+@startuml "High-Level Architecture"
+!theme plain
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam padding 10
+
+title "High-Level Architecture - Community Tourist Assistant"
+
+actor Tourist as u_tourist
+actor Contributor as u_contrib
+actor "Moderator / Admin" as u_mod
+
+package "Frontend Layer" as frontend #lightblue {
+  [Next.js web app] as nextjs
+
+  note right of nextjs
+    Next.js 15, React 18, TypeScript, Tailwind
+    - Browse, map, search, reviews
+    - Submit places, profile, leaderboard
+    - Staff: moderation queue, reports, analytics
+    - Auth + notifications via React contexts
+  end note
+}
+
+package "Backend Layer" as backend #lightgreen {
+  [Django REST API] as django
+
+  note right of django
+    Django 4.2, DRF, SimpleJWT
+    Apps: users, assets, reviews,
+    moderation, analytics
+    - REST + OpenAPI (/api/docs/)
+    - JWT auth, RBAC, serializers
+    - Queue, reports, audit, live analytics
+  end note
+}
+
+package "Data Layer" as data #lightyellow {
+  database "PostgreSQL 15" as postgres
+  database "MinIO (S3)" as minio
+
+  note right of postgres
+    Users, assets, reviews,
+    categories, moderation,
+    reports, badges
+    (plus analytics tables reserved/future)
+  end note
+
+  note right of minio
+    Object storage for
+    asset images (when USE_S3_MEDIA)
+  end note
+}
+
+cloud "OpenStreetMap\n(map tiles)" as osm
+cloud "Nominatim\n(geocoding)" as nominatim
+
+u_tourist --> nextjs : Browse, search, rate
+u_contrib --> nextjs : Submit, review
+u_mod --> nextjs : Moderate, reports, analytics
+
+nextjs -[#blue]-> django : HTTPS / JSON REST
+nextjs -[#purple]-> osm : Map tiles (HTTPS)
+nextjs -[#purple]-> nominatim : Address/place search (HTTPS)
+
+django -[#black]-> postgres : ORM / SQL
+django -[#black]-> minio : django-storages S3 API
+
+legend right
+  |= Layer |= Role |
+  | Frontend | UI only; calls one API base URL |
+  | Backend | All business rules and auth |
+  | Data | PostgreSQL + optional MinIO |
+endlegend
+
+@enduml
