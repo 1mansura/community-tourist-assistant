@@ -429,7 +429,7 @@ The platform collects only the minimum data needed to operate: **email address**
 
 ## License
 
-ECM3432 Software Engineering coursework 
+Public avaliable 
 
 ## Contributing
 
