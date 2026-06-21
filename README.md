@@ -52,7 +52,7 @@ The repository includes the latest coursework MVP updates, including:
 The backend is a **Django REST API** (Django 4.2 + Django REST Framework) that provides all data and business logic for the frontend. It runs on port **8000** and is the single server-side component that the frontend talks to.
 
 - **Authentication:** JWT (SimpleJWT). Users register and log in via `/api/users/register/` and `/api/users/login/`; the frontend sends the access token in the `Authorization` header for protected endpoints. Refresh tokens extend sessions; logout blacklists the token.
-- **Data:** PostgreSQL stores users, places (assets), categories, reviews, moderation actions, reports, and gamification (points, badges). MinIO (S3-compatible) stores uploaded images; the API returns URLs that the frontend uses to display photos.
+- **Data:** PostgreSQL stores users, places (assets), categories, reviews, moderation actions, reports, and gamification (points, badges). Uploaded images go to object storage — **MinIO** locally (S3-compatible) or **Amazon S3** when configured; the API returns URLs the frontend uses to display photos.
 - **Endpoints:** Assets (list, detail, create, featured, nearby, categories), reviews (list, create, mark helpful), users (profile, leaderboard), moderation (queue, approve/reject, reports, audit), and analytics (platform stats). All list endpoints are paginated; filtering and search are supported where relevant.
 - **Roles:** Permission classes enforce who can do what: e.g. only moderators/admins see the moderation queue and decide actions; only authenticated users can submit places or write reviews. See the [API endpoints](#api-endpoints) table below and **http://localhost:8000/api/docs/** (Swagger) for the full list.
 
@@ -145,6 +145,8 @@ ECM3432/
 In a cloud deployment, the same containers (or managed equivalents) map cleanly: Next.js serves the UI, Django handles API and business logic, PostgreSQL holds relational data, and uploaded images go to object storage — **MinIO** when you self-host the full stack (e.g. `docker-compose.prod.yml`), or **Amazon S3** when you point `MEDIA_STORAGE_BACKEND=s3` at a managed bucket.
 
 ## Object storage
+
+The application supports **MinIO** for local S3-compatible object storage and can be configured to use **Amazon S3** as a cloud object storage option for uploaded media.
 
 The backend uses **django-storages** with the S3 API for media uploads. Switch backends with `MEDIA_STORAGE_BACKEND`:
 
@@ -459,11 +461,11 @@ Interactive API documentation is served at `/api/docs/` when the backend is runn
 
 ## Privacy and data protection
 
-The platform collects only the minimum data needed to operate: **email address** and **username** at registration. No real names, phone numbers, or addresses are required. Emails are never exposed publicly (the leaderboard and review listings show usernames only). Passwords are hashed using Django's default PBKDF2 (SHA-256) algorithm. The application does not use third-party analytics or tracking scripts, and no user data is shared with external services. All uploaded images are stored in the project's own MinIO (S3-compatible) bucket, not on external CDNs. For local/demo use, data stays on the host machine; for production, standard server-side security practices (HTTPS, firewall, backup) apply.
+The platform collects only the minimum data needed to operate: **email address** and **username** at registration. No real names, phone numbers, or addresses are required. Emails are never exposed publicly (the leaderboard and review listings show usernames only). Passwords are hashed using Django's default PBKDF2 (SHA-256) algorithm. The application does not use third-party analytics or tracking scripts, and no user data is shared with external services. All uploaded images are stored in configurable object storage (**MinIO** locally by default, or **Amazon S3** in production via `MEDIA_STORAGE_BACKEND=s3`), not on external CDNs unless you add one (e.g. CloudFront). For local/demo use, data stays on the host machine; for production, standard server-side security practices (HTTPS, firewall, backup) apply.
 
 ## License
 
-Public avaliable 
+Publicly available.
 
 ## Contributing
 
