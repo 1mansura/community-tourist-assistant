@@ -1,7 +1,10 @@
 """
 Production settings.
 """
+import os
+
 from .base import *
+from .storage import configure_media_storage
 
 DEBUG = False
 
@@ -20,11 +23,4 @@ DATABASES = {
 
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', '').split(',')
 
-AWS_ACCESS_KEY_ID = os.environ.get('MINIO_ROOT_USER')
-AWS_SECRET_ACCESS_KEY = os.environ.get('MINIO_ROOT_PASSWORD')
-AWS_STORAGE_BUCKET_NAME = os.environ.get('MINIO_BUCKET_NAME', 'media')
-AWS_S3_ENDPOINT_URL = f"http://{os.environ.get('MINIO_ENDPOINT', 'minio:9000')}"
-AWS_S3_FILE_OVERWRITE = False
-AWS_DEFAULT_ACL = None
-
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+configure_media_storage(globals(), allow_local=False)

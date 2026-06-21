@@ -49,3 +49,15 @@ docker run --rm -v "$(pwd)/architecture:/data" plantuml/plantuml -tpng -o images
 2. Insert the images into your report where indicated.
 
 Source of truth for diagram content is the `.puml` files in this folder.
+
+## Cloud deployment mapping
+
+| Component | Local / demo | Cloud (typical) |
+|-----------|--------------|-----------------|
+| Frontend | Next.js (Docker) | Next.js container or static hosting |
+| Backend | Django REST API (Docker) | Django container / app service |
+| Database | PostgreSQL (Docker) | Managed PostgreSQL (e.g. RDS) |
+| Object storage | MinIO (Docker, S3-compatible) | **Amazon S3** (`MEDIA_STORAGE_BACKEND=s3`) |
+| Orchestration | Docker Compose | Docker Compose, ECS, Kubernetes, etc. |
+
+The backend already speaks the S3 API via django-storages; switching from MinIO to Amazon S3 is configuration only (`MEDIA_STORAGE_BACKEND` and AWS env vars — see root `README.md`).

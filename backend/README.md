@@ -22,7 +22,7 @@
 
 - **Auth:** Registration, JWT pair + refresh blacklist on logout; RBAC (`user`, `contributor`, `moderator`, `admin`).
 - **Assets:** Slug-based detail; submitter can see non-approved own assets; moderators see all in queue.
-- **Media:** `django-storages` + S3 backend when `USE_S3_MEDIA=true` (Docker dev → MinIO); else local `MEDIA_ROOT` + `/media/` in DEBUG.
+- **Media:** `django-storages` + S3 API. `MEDIA_STORAGE_BACKEND` selects `local` (filesystem), `minio` (Docker), or `s3` (Amazon S3). Legacy `USE_S3_MEDIA=true` maps to MinIO.
 - **Gamification:** `add_points()`, badge rules in `apps/users/badges.py`; points on approve, reviews, image upload (see project docs).
 - **Moderation:** Decisions logged; approve recalculates submitter `contribution_count` from approved assets; audit entries for reports and user actions.
 - **Reporting:** Create report (authenticated); staff list/resolve.
@@ -47,7 +47,7 @@ python manage.py runserver 0.0.0.0:8000
 - **Swagger:** http://localhost:8000/api/docs/  
 - **Health:** http://localhost:8000/health/  
 
-Use **PostgreSQL**; for MinIO locally, set `USE_S3_MEDIA` and MinIO-related env vars (see `config/settings/dev.py`).
+Use **PostgreSQL**; for object storage see `config/settings/storage.py` and `MEDIA_STORAGE_BACKEND` in `.env.example`.
 
 ---
 

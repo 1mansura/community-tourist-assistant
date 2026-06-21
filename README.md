@@ -122,7 +122,7 @@ ECM3432/
 |------|--------------|
 | **Core** | Python 3.11, Django 4.2, Django REST Framework |
 | **Database** | PostgreSQL 15 |
-| **Storage** | MinIO (S3-compatible) for images |
+| **Storage** | MinIO locally (S3-compatible); Amazon S3 optional in production |
 | **Auth** | JWT (SimpleJWT), token blacklist, role-based access (user, contributor, moderator, admin) |
 | **API docs** | drf-spectacular (OpenAPI / Swagger) |
 | **Tooling** | pytest, pytest-django, pytest-cov, ruff |
@@ -131,6 +131,32 @@ ECM3432/
 
 - Docker & Docker Compose
 - GitHub Actions (CI: tests, lint, frontend build)
+
+## Architecture overview
+
+| Layer | Technology |
+|-------|------------|
+| **Frontend** | Next.js |
+| **Backend** | Django REST API |
+| **Database** | PostgreSQL |
+| **Object storage** | MinIO locally / Amazon S3 (optional) |
+| **Containerisation** | Docker |
+
+In a cloud deployment, the same containers (or managed equivalents) map cleanly: Next.js serves the UI, Django handles API and business logic, PostgreSQL holds relational data, and uploaded images go to object storage — **MinIO** when you self-host the full stack (e.g. `docker-compose.prod.yml`), or **Amazon S3** when you point `MEDIA_STORAGE_BACKEND=s3` at a managed bucket.
+
+## Object storage
+
+The backend uses **django-storages** with the S3 API for media uploads. Switch backends with `MEDIA_STORAGE_BACKEND`:
+
+| Backend | When to use | Key env vars |
+|---------|-------------|--------------|
+| **`local`** | Non-Docker dev without MinIO | none (files under `backend/media/`) |
+| **`minio`** | Docker Compose local/demo and self-hosted prod | `MINIO_*` |
+| **`s3`** | Managed production on AWS | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_STORAGE_BUCKET_NAME`, `AWS_S3_REGION_NAME` |
+
+- **Local / Docker default:** `docker-compose.yml` sets `USE_S3_MEDIA=true` and MinIO credentials — equivalent to `MEDIA_STORAGE_BACKEND=minio`.
+- **Amazon S3:** set `MEDIA_STORAGE_BACKEND=s3` and the AWS variables in `.env` (see `.env.example`). No `AWS_S3_ENDPOINT_URL` is needed; boto3 uses the regional S3 endpoint. Optionally set `AWS_S3_CUSTOM_DOMAIN` for CloudFront.
+- **Legacy:** `USE_S3_MEDIA=true` still selects MinIO when `MEDIA_STORAGE_BACKEND` is unset.
 
 ## Setup
 
@@ -174,10 +200,18 @@ ECM3432/
    export POSTGRES_PASSWORD=your_password
    export POSTGRES_DB=tourist_assistant
 
-   # Optional: MinIO for image uploads (local dev can use backend/media/)
+   # Optional: object storage (local dev defaults to backend/media/)
+   # MEDIA_STORAGE_BACKEND=minio
    # MINIO_ROOT_USER=minioadmin
    # MINIO_ROOT_PASSWORD=minioadmin
    # MINIO_ENDPOINT=localhost:9000
+   #
+   # Production on Amazon S3:
+   # MEDIA_STORAGE_BACKEND=s3
+   # AWS_ACCESS_KEY_ID=...
+   # AWS_SECRET_ACCESS_KEY=...
+   # AWS_STORAGE_BUCKET_NAME=...
+   # AWS_S3_REGION_NAME=eu-west-2
    ```
 
 4. Run migrations:
